@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta tags for setting up charset, compatibility, and mobile responsiveness -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Meta tags for enabling PWA features on iOS devices -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WeatherWidget">
+    
+    <!-- Link to the app icon for iOS devices -->
+    <link rel="apple-touch-icon" href="images/apple-touch-icon-60x60.png">
+    
+    <!-- Link to the PWA manifest (JSON) file -->
+    <link rel="manifest" href="#manifest">
+
+    <!-- Title of the web app shown in the browser tab -->
+    <title>WeatherWidget2</title>
+    
+    <!-- External stylesheets for Font Awesome (icons) and Weather Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons.min.css">
+    
+    <!-- Inline CSS for custom styles of the weather widget -->
+    <style>
+        /* Styles for the background container that fills the whole viewport */
+        .background-container {
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        } 
+
+        /* Styles for the location section (including the location pin and name) */
+        .location-container {
+            display: flex;
+            align-items: center;
+            color: white;
+            justify-content: center;
+            position: relative;
+            font-size: x-large;
+            padding-top: 3px;
+            gap: 5px;
+        }
+
+        /* Divider line between the location and weather details */
+        .location-divider {
+            width: 90%;
+            border: none;
+            border-top: 2px solid white;
+            margin: 5px auto;
+        }
+
+        /* Styles for the card container that holds the weather details */
+        .card-body {
+            position: relative;
+            border-radius: 15px;
+            margin: 20px auto;
+            text-align: center;
+            background: hsla(205, 48%, 78%, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            flex-direction: row;
+            justify-content: center;
+            align-self: center;
+            width: 300px;
+            height: 350px;
+            box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Background image for the weather card with a blur effect */
+        .card-body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('images/weather-backdrop.png') center/cover no-repeat;
+            filter: blur(0px);
+            z-index: 0;
+        }
+
+        /* Ensuring the weather content appears above the blurred background */
+        .card-body * {
+            position: relative;
+            z-index: 1;
+            color: White;
+        }
+
+        /* Styling for weather text like temperature and conditions */
+        .weather-text {
+            text-align: center;
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: bold;
+            justify-content: center;
+            display: flex;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            width: 250px;
+        }
+
+        /* Styles for temperature display */
+        .temp {
+            font-size: 4rem;
+            font-weight: lighter;
+            margin-top: 10px;
+        }
+
+        /* Styles for weather conditions like "Clear Sky" or "Rainy" */
+        .weather-condition {
+            text-align: center;
+            font-size: clamp(14px, 3vw, 40px);
+            font-size: 2rem;
+            margin-left: 5px;
+            margin-top: 10px;
+        }
+
+        /* Styles for weather icon display (using weather icons library) */
+        .weather-icon {
+            text-align: right;
+            font-size: 2rem;
+            margin-left: 10px;
+        }
+
+        /* Styling for the spans in the weather details */
+        span {
+            display: inline-flex;
+            flex-direction: row;
+            text-align: center;
+            font-size: larger;
+            margin-top: -4px;
+            padding: -4px;
+            gap: 30px;
+        }
+    </style>
+</head>
+<body class="background-container">
+    <!-- Container for the weather card widget -->
+    <div class="align-items-center justify-content-center min-vh-10">
+        <div id="cardWidget" class="card-body">
+            <!-- Location section with location pin icon and location name -->
+            <div class="location-container">
+                <img id="imgLocationPinLogo" src="images/pin-location-2-icon-1534x2048-t8eet69l.png" class=" mt-2 img-fluid" alt="Location Pin Icon" style="filter: invert(1) grayscale(1) brightness(2);" width="30">
+                <span style="font-size: 2rem; font-weight: lighter;">Cookeville, TN</span>
+            </div>
+            
+            <!-- Divider line between location and weather details -->
+            <hr class="location-divider">
+
+            <!-- Weather header (e.g., "Clear Sky") -->
+            <div class="weather-text">
+                <div id="weatherHeader" class="mb-0">Loading...</div>
+            </div>
+
+            <!-- Weather details (e.g., temperature, humidity, wind speed) -->
+            <div class="weather-text">
+                <div id="weather"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Registering service worker to enable offline functionality (for PWA features)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js').then((registration) => {
+                console.log('Service Worker registered:', registration);
+            }).catch((error) => {
+                console.error('Service Worker registration failed:', error);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Fetching weather data from Open-Meteo API (using latitude and longitude for location)
+            const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // Extracting weather data from the API response
+                    const current = data.current;
+                    const tempF = (current.temperature_2m * 9/5) + 32;
+                    const apparentTempF = (current.apparent_temperature * 9/5) + 32;
+                    const humidity = current.relative_humidity_2m;
+                    const windSpeed = current.wind_speed_10m;
+                    const windDirection = current.wind_direction_10m;
+                    const weatherCode = current.weather_code;
+                    const isDay = current.is_day ? "Daytime ☀️" : "Night 🌙";
+
+                    // Function to convert wind degrees to a wind direction (e.g., N, NNE, etc.)
+                    function getWindDirection(degrees) {
+                        const directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N"];
+                        return directions[Math.round(degrees / 22.5)];
+                    }
+
+                    // Get the text representation of wind direction
+                    const windDirectionText = getWindDirection(windDirection);
+
+                    // Weather condition icons based on weather code from the API
+                    const weatherConditions = {
+                        0: '<i class="wi wi-day-sunny"></i> Clear Sky',
+                        1: '<i class="wi wi-day-cloudy"></i> Mainly Clear',
+                        2: '<i class="wi wi-cloud"></i> Partly Cloudy',
+                        3: '<i class="wi wi-cloudy"></i> Overcast',
+                        45: '<i class="wi wi-fog"></i> Fog',
+                        48: '<i class="wi wi-day-fog"></i> Depositing Rime Fog',
+                        51: '<i class="wi wi-showers"></i> Drizzle',
+                        53: '<i class="wi wi-rain"></i> Moderate Drizzle',
+                        55: '<i class="wi wi-rain-wind"></i> Heavy Drizzle',
+                        61: '<i class="wi wi-showers"></i> Light Rain Showers',
+                        63: '<i class="wi wi-rain"></i> Moderate Rain',
+                        65: '<i class="wi wi-rain-wind"></i> Heavy Rain',
+                        71: '<i class="wi wi-snow"></i> Snow Showers',
+                        73: '<i class="wi wi-snowflake-cold"></i> Moderate Snow',
+                        75: '<i class="wi wi-snow-wind"></i> Heavy Snow',
+                        80: '<i class="wi wi-showers"></i> Light Rain Showers',
+                        81: '<i class="wi wi-rain"></i> Moderate Rain Showers',
+                        82: '<i class="wi wi-thunderstorm"></i> Heavy Rain Showers'
+                    };
+
+                    const weatherCondition = weatherConditions[weatherCode] || "Unknown Condition";
+
+                    // Displaying the weather header (condition and temperature)
+                    document.getElementById("weatherHeader").innerHTML = `
+                        <div class="d-flex align-items-center justify-content-between w-100">
+                            <span class="weather-condition">${weatherCondition.replace(/<i.*?<\/i>/, '')}</span>
+                            <span class="weather-icon">${weatherCondition.match(/<i.*?<\/i>/)[0]}</span>
+                        </div>
+                        <div class="temp">${tempF.toFixed(1)}°F</div>
+                    `;
+
+                    // Displaying additional weather details (feels like, humidity, wind speed, etc.)
+                    document.getElementById("weather").innerHTML += `
+                        <div class="d-flex align-items-center justify-content-center flex-row">
+                            <span><p><i class="fas fa-temperature-low"></i> Feels Like: ${apparentTempF.toFixed(1)}°F</p></span>
+                            <span>
+                                <p><i class="fas fa-tint"></i> ${humidity}%</p>
+                                <p><i class="fas fa-wind"></i> ${windSpeed} mph</p>
+                                <p><i class="fa-solid fa-compass"></i> ${getWindDirection(windDirection)}</p>
+                            </span>
+                        </div>
+                    `;
+                })
+                .catch(error => console.error("Error fetching weather data:", error));
+        });
+
+        // PWA manifest settings for app icons, theme, and start URL
+        const manifest = {
+            "name": "WeatherWidget",
+            "short_name": "Weather",
+            "description": "Weather Forecast Widget",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#000000",
+            "icons": [
+                {
+                    "src": "images/apple-touch-icon-60x60.png",
+                    "sizes": "60x60",
+                    "type": "image/png"
+                },
+                {
+                    "src": "images/apple-touch-icon-120x120.png",
+                    "sizes": "120x120",
+                    "type": "image/png"
+                },
+                {
+                    "src": "images/apple-touch-icon-152x152.png",
+                    "sizes": "152x152",
+                    "type": "image/png"
+                }
+            ]
+        };
+    </script>
+
+    <!-- Service Worker for caching assets and enabling offline functionality -->
+    <script>
+        self.addEventListener('install', (event) => {
+            event.waitUntil(
+                caches.open('weather-widget-cache').then((cache) => {
+                    return cache.addAll([
+                        '/',
+                        'index.html',
+                        'styles.css',
+                        'script.js',
+                        'images/weather-backdrop.png',
+                        'images/pin-location-2-icon-1534x2048-t8eet69l.png',
+                        'images/apple-touch-icon-60x60.png'
+                    ]);
+                })
+            );
+        });
+
+        self.addEventListener('fetch', (event) => {
+            event.respondWith(
+                caches.match(event.request).then((response) => {
+                    return response || fetch(event.request);
+                })
+            );
+        });
+    </script>
+</body>
+</html>
