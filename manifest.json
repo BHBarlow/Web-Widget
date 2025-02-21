@@ -1,7 +1,7 @@
 {
   "name": "My Widget",
   "short_name": "Widget",
-  "start_url": "/index.html",
+  "start_url": "/Web-Widget",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
