@@ -139,7 +139,7 @@
             <!-- This is for the top location pin and city -->
             <div class="location-container">
                 <img id="imgLocationPinLogo" src="images/pin-location-2-icon-1534x2048-t8eet69l.png" class=" mt-2 img-fluid" alt="Location Pin Icon"  style="filter: invert(1) grayscale(1) brightness(2);" width="30">
-                <span style="font-size: 2rem; font-weight: lighter;">Cookeville, TN</span>
+                <span style="font-size: 2rem; font-weight: lighter;" tabindex="0" aria-label="Cookeville TN, Weather Widget Title">Cookeville, TN</span>
             </div>
             <hr class="location-divider">
             <div class="weather-text">
@@ -151,7 +151,7 @@
                 <div id="weather"></div>
             </div>
             <footer>
-                    <p>Weather data provided by <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener" >Open-Meteo</a></p>
+                    <p>Weather data provided by <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener" aria-label="Open Meteo Documentation">Open-Meteo</a></p>
             </footer>
         </div>
     </div>
@@ -217,21 +217,21 @@
                     // Update the HTML elements
                     document.getElementById("weatherHeader").innerHTML = `
                     <div class="d-flex align-items-center justify-content-between w-100">
-                        <span class="weather-condition">${weatherCondition.replace(/<i.*?<\/i>/, '')}</span>
-                        <span class="weather-icon">${weatherCondition.match(/<i.*?<\/i>/)[0]}</span>
+                        <span class="weather-condition" tabindex="1" aria-label="Current Weather Condition">${weatherCondition.replace(/<i.*?<\/i>/, '')}</span>
+                        <span class="weather-icon" role="img" tabindex="2" aria-label="Weather Condition Icon">${weatherCondition.match(/<i.*?<\/i>/)[0]}</span>
                     </div>
-                    <div class="temp">${tempF.toFixed(1)}°F</div>
+                    <div class="temp" tabindex="3" aria-label="Current Tempature in Fahrenheit">${tempF.toFixed(1)}°F</div>
                 `;
 
 
     
                     document.getElementById("weather").innerHTML += `
                     <div class="d-flex align-items-center justify-content-center flex-row">
-                        <span><p><i class="fas fa-temperature-low"></i> Feels Like: ${apparentTempF.toFixed(1)}°F</p></span>
+                        <span><p><i class="fas fa-temperature-low" tabindex="4" aria-label="Current Feels Like Tempature in Fahrenheit"></i> Feels Like: ${apparentTempF.toFixed(1)}°F</p></span>
                         <span>
-                            <p><i class="fas fa-tint"></i> ${humidity}%</p>
-                            <p><i class="fas fa-wind"></i> ${windSpeed} mph</p>
-                            <p><i class="fa-solid fa-compass"></i> ${getWindDirection(windDirection)}</p>
+                            <p><i class="fas fa-tint" tabindex="5" aria-label="Current Humidity percentage"></i> ${humidity}%</p>
+                            <p><i class="fas fa-wind" tabindex="6"aria-label="Current Wind Speed in Miles per hour"></i> ${windSpeed} mph</p>
+                            <p><i class="fa-solid fa-compass" tabindex="7" aria-label="Current Wind Direction"></i> ${getWindDirection(windDirection)}</p>
                         </span>
                     </div>
                 `;
